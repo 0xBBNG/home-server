@@ -1,0 +1,34 @@
+version: "3.9"
+
+services:
+  pihole:
+    container_name: pihole53
+    image: pihole/pihole:latest # check the latest version on docker hub.
+    hostname: pihole # set an easy hostname to remember
+    cap_add:
+      - NET_ADMIN
+    networks:
+      mynet: # same as network specified below
+        ipv4_address: 192.168.1.53 # the IP of the pihole container
+    dns:
+      - 127.0.0.1 # use local DNS, since the pihole 
+      - 1.1.1.1 # optional fallback DNS
+    ports: # expose all pihole ports.
+      - 53/tcp
+      - 53/udp
+      - 67/udp
+      - 80/tcp
+    volumes: # mount our data volumes.
+       - './etc-pihole/:/etc/pihole/'
+       - './etc-dnsmasq.d/:/etc/dnsmasq.d/'
+       - './backups/:/backups/' # backups explained later
+    environment: # set variables for pihole configuration.
+      ServerIP: 192.168.1.53 # must match ipv4_address above
+      VIRTUAL_HOST: pihole.exampledomain  # Must be hostname + domainname from above
+      WEBPASSWORD: "veganpi"
+      TZ: 'America/Los_Angeles' # pick your timezone
+    restart: unless-stopped
+
+networks:
+  mynet:   # externally created network (later in article)
+    external: true
