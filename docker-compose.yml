@@ -1,6 +1,27 @@
 version: "3.9"
 
 services:
+  # Ouroboros: Automatically update your running Docker containers to the latest available image
+  # https://github.com/pyouroboros/ouroboros
+  ouroboros:
+    container_name: ouroboros
+    hostname: ouroboros
+    networks:
+      ${NET}:
+        ipv4_address: 192.168.10.1
+    image: pyouroboros/ouroboros
+    environment:
+      - CLEANUP=true
+      - INTERVAL=300
+      - LOG_LEVEL=info
+      - SELF_UPDATE=true
+      - TZ=${TZ} 
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  # Pihole: Network-wide Ad Blocking
+  # https://hub.docker.com/r/pihole/pihole
   pihole:
     container_name: pihole53
     image: pihole/pihole:latest
@@ -8,12 +29,12 @@ services:
     cap_add:
       - NET_ADMIN
     networks:
-      asgard: # same as network specified below
-        ipv4_address: 192.168.10.53 # the IP of the pihole container
+      ${NET}:
+        ipv4_address: 192.168.10.2
     dns:
-      - 127.0.0.1 # use local DNS, since the pihole 
-      - 1.1.1.1 # optional fallback DNS
-    ports: # expose all pihole ports.
+      - 127.0.0.1
+      - 1.1.1.1
+    ports:
       - 53/tcp
       - 53/udp
       - 67/udp
@@ -23,29 +44,59 @@ services:
       - './etc-dnsmasq.d/:/etc/dnsmasq.d/'
       - './backups/:/backups/'
     environment:
-      ServerIP: 192.168.10.53 # must match ipv4_address above
+      ServerIP: 192.168.10.53
       VIRTUAL_HOST: pihole.exampledomain
-      WEBPASSWORD: "veganpi"
-      TZ: 'Asia/Jerusalem'
+      WEBPASSWORD: ${PASS}
+      TZ: ${TZ}
     restart: unless-stopped
 
+  # Homer: A fancy homepage for self-hosted services
+  # https://hub.docker.com/r/b4bz/homer
   homer:
-      container_name: homer
-      image: b4bz/homer:latest
-      hostname: homer
-      networks:
-        asgard: # same as network specified below
-          ipv4_address: 192.168.10.50 # the IP of the container
-      ports: # expose all pihole ports.
-        - 8080:8080
-      volumes: # mount our data volumes.
-        - /home/kali/docker_stuff/homer:/www/assets
-      user: 0:0
-      environment:
-        - INIT_ASSETS=1 # default
-      restart: unless-stopped
+    container_name: homer
+    image: b4bz/homer:latest
+    hostname: homer
+    networks:
+      ${NET}:
+        ipv4_address: 192.168.10.3
+    ports:
+      - 8080:8080
+    volumes:
+      - /home/kali/docker_stuff/homer:/www/assets
+    user: 0:0
+    environment:
+      - INIT_ASSETS=1
+    restart: unless-stopped
+
+  # Wireguard VPN server
+  # https://hub.docker.com/r/linuxserver/wireguard
+  wireguard:
+    image: ghcr.io/linuxserver/wireguard
+    container_name: wireguard
+    networks:
+      ${NET}:
+        ipv4_address: 192.168.10.4
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    environment:
+      - PUID=${UID}
+      - PGID=${GID}
+      - TZ=${TZ} 
+      - SERVERURL=${WG_HOST}
+      - SERVERPORT=51820
+      - PEERS=${WG_PEERS}
+      - PEERDNS=auto
+    volumes:
+      - ${DATA}/wgserver/config:/config
+      - /lib/modules:/lib/modules
+    ports:
+      - 51820:51820/udp
+    sysctls:
+      - net.ipv4.conf.all.src_valid_mark=1
+    restart: unless-stopped
 
 
 networks:
-  asgard:   # externally created network
+  ${NET}:   # externally created network
     external: true
