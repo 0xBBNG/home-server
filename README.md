@@ -27,3 +27,8 @@ docker-compose up -d
 ```
 
 :warning: You have to install docker and docker-compose first.
+
+## Tasks
+
+* guacamole
+* elastic stack
