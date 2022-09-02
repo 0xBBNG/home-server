@@ -7,7 +7,7 @@ services:
     container_name: ouroboros
     hostname: ouroboros
     networks:
-      ${NET}:
+      - ${NET}
     image: pyouroboros/ouroboros
     environment:
       - CLEANUP=true
@@ -28,8 +28,7 @@ services:
     cap_add:
       - NET_ADMIN
     networks:
-      ${NET}:
-        ipv4_address: 192.168.10.53
+      - ${NET}
     dns:
       - 127.0.0.1
       - 1.1.1.1
@@ -43,8 +42,6 @@ services:
       - './etc-dnsmasq.d/:/etc/dnsmasq.d/'
       - './backups/:/backups/'
     environment:
-      ServerIP: 192.168.10.53
-      VIRTUAL_HOST: pihole.exampledomain
       WEBPASSWORD: ${PASS}
       TZ: ${TZ}
     restart: unless-stopped
@@ -56,11 +53,11 @@ services:
     image: b4bz/homer:latest
     hostname: homer
     networks:
-      ${NET}:
+      - ${NET}
     ports:
       - 8080:8080
     volumes:
-      - ${PATH}/homer:/www/assets
+      - ${DOCKER_PATH}/homer:/www/assets
     user: 0:0
     environment:
       - INIT_ASSETS=1
@@ -72,7 +69,7 @@ services:
     image: ghcr.io/linuxserver/wireguard
     container_name: wireguard
     networks:
-      ${NET}:
+      - ${NET}
     cap_add:
       - NET_ADMIN
       - SYS_MODULE
@@ -85,7 +82,7 @@ services:
       - PEERS=${WG_PEERS}
       - PEERDNS=auto
     volumes:
-      - ${PATH}/wgserver/config:/config
+      - ${DOCKER_PATH}/wgserver/config:/config
       - /lib/modules:/lib/modules
     ports:
       - 51820:51820/udp
@@ -97,23 +94,26 @@ services:
   homeassistant:
     image: lscr.io/linuxserver/homeassistant:latest
     container_name: homeassistant
+    networks:
+      - ${NET}
     environment:
       - PUID=1000
       - PGID=1000
       - TZ=Asia/Jerusalem
     volumes:
-      - ${PATH}/home-assistant:/config
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${DOCKER_PATH}/home-assistant:/config
     ports:
       - 8123:8123 #optional
     restart: unless-stopped
-    networks:
-      ${NET}:
 
   # Nextcloud - self hosted cloud service
   nextcloud_db:
     image: mariadb
     container_name: nextcloud_mariadb
     restart: always
+    networks:
+      - ${NET}
     volumes:
       - db:/var/lib/mysql
     environment:
@@ -122,8 +122,6 @@ services:
       - MYSQL_DATABASE=nextcloud
       - MYSQL_USER=nextcloud
     command: --transaction-isolation=READ-COMMITTED --binlog-format=ROW --skip-innodb-read-only-compressed
-    networks:
-      ${NET}:
 
   nextcloud:
     image: nextcloud
@@ -131,10 +129,12 @@ services:
     restart: always
     depends_on:
       - nextcloud_db
+    networks:
+      - ${NET}
     ports:
-      - 8080:80
+      - 8888:80
     links:
-      - db
+      - nextcloud_db
     volumes:
       - nextcloud:/var/www/html
     environment:
@@ -142,8 +142,6 @@ services:
       - MYSQL_DATABASE=nextcloud
       - MYSQL_USER=${USER}
       - MYSQL_HOST=db
-    networks:
-      ${NET}:
 
   # Guacamole - Remote Session manager
     # networks:
@@ -152,29 +150,29 @@ services:
 
   # Vaultwarden - Selfhosted password manager
   vaultwarden:
-    image: vaultwarden/server:raspberry
+    image: vaultwarden/server:latest
     container_name: vaultwarden
     networks:
-      ${NET}:
+      - ${NET}
     expose:
       - "80"
       - "3012"
     volumes:
-      - ${PATH}/Data/Vaultwarden:/data
+      - ${DOCKER_PATH}/Data/Vaultwarden:/data
     restart: unless-stopped
     environment:
       WEBSOCKET_ENABLED: ${WEBSOCKET_ENABLED}
       SIGNUPS_ALLOWED: ${SIGNUPS_ALLOWED}
       TZ: ${TZ}
-    build: 
-      context: vaultwarden
-      args: 
-        DB: postgresql
 
   # Portainer - Docker deployement GUI
   portainer:
     image: portainer/portainer-ce:latest
     container_name: portainer
+    ports:
+      - 9000:9000
+    networks:
+      - ${NET}
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
@@ -182,10 +180,6 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./portainer-data:/data
-    ports:
-      - 9000:9000
-    networks:
-      ${NET}:
 
   # Elastic Stack and Elatic Security
     # networks:
@@ -197,8 +191,7 @@ volumes:
   db:
 
 networks:
-  ${NET}:
-    driver: ipvlan
+  asgard: 
     driver_opts:
       parent: eth0
     ipam:

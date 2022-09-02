@@ -23,7 +23,7 @@ Edit your settings in the `.env` file.
 Start the containers with
 
 ```shell
-docker-compose up -d
+docker compose up -d
 ```
 
 :warning: You have to install docker and docker-compose first.
