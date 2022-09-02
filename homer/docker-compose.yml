@@ -1,0 +1,22 @@
+version: "2"
+
+services:
+  homer:
+    container_name: homer
+    image: b4bz/homer:latest # check the latest version on docker hub.
+    hostname: homer # set an easy hostname to remember
+    networks:
+      mynet: # same as network specified below
+        ipv4_address: 192.168.1.50 # the IP of the pihole container
+    ports: # expose all pihole ports.
+      - 8080:8080
+    volumes: # mount our data volumes.
+       - /home/haili/docker/homer:/www/assets
+    user: 0:0
+    environment: # set variables for pihole configuration.
+      - INIT_ASSETS=1 # default
+    restart: unless-stopped
+
+networks:
+  mynet:   # externally created network
+    external: true

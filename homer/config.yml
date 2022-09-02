@@ -1,0 +1,139 @@
+---
+title: "Homer Server"
+subtitle: "Haili Sambrano"
+logo: "logo.png"
+
+header: false
+footer: false
+
+stylesheet:
+  - "assets/custom.css"
+
+columns: "3" # You can change this to any number that is a factor of 12: (1, 2, 3, 4, 6, 12)
+theme: default
+colors:
+  light:
+    highlight-primary: "#fff5f2"
+    highlight-secondary: "#fff5f2"
+    highlight-hover: "#bebebe"
+    background: "#12152B"
+    card-background: "rgba(255, 245, 242, 0.8)"
+    text: "#ffffff"
+    text-header: "#fafafa"
+    text-title: "#000000"
+    text-subtitle: "#111111"
+    card-shadow: rgba(0, 0, 0, 0.5)
+    link: "#3273dc"
+    link-hover: "#2e4053"
+    background-image: "../assets/wallpaper-light.jpeg" # Change wallpaper.jpeg to the name of your own custom wallpaper!
+  dark:
+    highlight-primary: "#181C3A"
+    highlight-secondary: "#181C3A"
+    highlight-hover: "#1F2347"
+    background: "#12152B"
+    card-background: "rgba(24, 28, 58, 0.8)"
+    text: "#eaeaea"
+    text-header: "#7C71DD"
+    text-title: "#fafafa"
+    text-subtitle: "#8B8D9C"
+    card-shadow: rgba(0, 0, 0, 0.5)
+    link: "#c1c1c1"
+    link-hover: "#fafafa"
+    background-image: "../assets/wallpaper.jpeg"
+
+services:
+# pihole53
+  - name: "//pihole53"
+    icon: "fa-solid fa-route"
+    items:
+      - name: "pihole53 @ 192.168.1.53"
+        logo: "assets/tools/pihole.png"
+        subtitle: "DNS sinkhole."
+        tag: "DNS"
+        tagstyle: "is-primary" # Try changing it to; is-link, is-info, is-success, is-warning or is-danger!
+        url: "http://pi.hole/admin"
+        target: "_blank"
+
+# portainer
+  - name: "//Portainer"
+    icon: "fa-brands fa-docker"
+    items:
+      - name: "portainer @ 192.168.1.100"
+        logo: "assets/tools/portainer.png"
+        subtitle: "Container Managment Tool."
+        tag: "Docker"
+        tagstyle: "is-link"
+        url: "https://kali.hole:9443"
+        target: "_blank"
+
+# guacamole
+  - name: "//Guacamole"
+    icon: "fa-solid fa-house-laptop"
+    items:
+      - name: "guacamole @ 192.168.1.51"
+        logo: "assets/tools/guacamole.png"
+        subtitle: "Clientless remote desktop gateway."
+        tag: "Remote Access"
+        tagstyle: "is-success"
+        url: "http://guacamole.hole:8080"
+        target: "_blank"
+
+# Nextcloud
+  - name: "//Nextcloud"
+    icon: "fa-solid fa-cloud"
+    items:
+      - name: "Nextcloud @ 192.168.1.52"
+        logo: "assets/tools/nextcloud.png"
+        subtitle: "Self-host cloud service."
+        tag: "Storage"
+        tagstyle: "is-info"
+        url: "http://nextcloud.hole/"
+        target: "_blank"
+
+# Bitwarden
+  - name: "//Bitwarden"
+    icon: "fa-solid fa-key"
+    items:
+      - name: "Bitwarden @ 192.168.1.54"
+        logo: "assets/tools/bitwarden.png"
+        subtitle: "Self-host open source password manager."
+        tag: "Security"
+        tagstyle: "is-info"
+        url: "https://bitwarden.hole:80/#/vault"
+        target: "_blank"
+
+# Uptime Kuma
+  - name: "//Uptime Kuma"
+    icon: "fa-solid fa-server"
+    items:
+      - name: "Uptime Kuma @ 192.168.1.100"
+        logo: "assets/tools/uptime-kuma.png"
+        subtitle: "A self-hosted monitoring tool."
+        tag: "KeepAlive"
+        tagstyle: "is-info"
+        url: "http://kali.hole:3001/"
+        target: "_blank"
+
+# Home Assistant
+  - name: "//Home Assistant"
+    icon: "fa-solid fa-house"
+    items:
+      - name: "Home Assistant @ 192.168.1.55"
+        logo: "assets/tools/home-assistant-circle.png"
+        subtitle: "Open source home automation tool."
+        tag: "Home"
+        tagstyle: "is-info"
+        url: "http://home-assistant.hole:8123/"
+        target: "_blank"
+
+# Kibana
+  - name: "//Kibana"
+    icon: "fa-solid fa-database"
+    items:
+      - name: "Kibana @ 192.168.1.35"
+        logo: "assets/tools/kibana.png"
+        subtitle: "Free and open-source Elasticsearch UI."
+        tag: "DB"
+        tagstyle: "is-info"
+        url: "http://kibana.hole:5601/"
+        target: "_blank"

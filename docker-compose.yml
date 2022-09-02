@@ -1,4 +1,4 @@
-version: "3.9"
+version: "3"
 
 services:
   # Ouroboros: Automatically update your running Docker containers to the latest available image
@@ -8,7 +8,6 @@ services:
     hostname: ouroboros
     networks:
       ${NET}:
-        ipv4_address: 192.168.10.1
     image: pyouroboros/ouroboros
     environment:
       - CLEANUP=true
@@ -30,7 +29,7 @@ services:
       - NET_ADMIN
     networks:
       ${NET}:
-        ipv4_address: 192.168.10.2
+        ipv4_address: 192.168.10.53
     dns:
       - 127.0.0.1
       - 1.1.1.1
@@ -58,11 +57,10 @@ services:
     hostname: homer
     networks:
       ${NET}:
-        ipv4_address: 192.168.10.3
     ports:
       - 8080:8080
     volumes:
-      - /home/kali/docker_stuff/homer:/www/assets
+      - ${PATH}/homer:/www/assets
     user: 0:0
     environment:
       - INIT_ASSETS=1
@@ -75,7 +73,6 @@ services:
     container_name: wireguard
     networks:
       ${NET}:
-        ipv4_address: 192.168.10.4
     cap_add:
       - NET_ADMIN
       - SYS_MODULE
@@ -88,7 +85,7 @@ services:
       - PEERS=${WG_PEERS}
       - PEERDNS=auto
     volumes:
-      - ${DATA}/wgserver/config:/config
+      - ${PATH}/wgserver/config:/config
       - /lib/modules:/lib/modules
     ports:
       - 51820:51820/udp
@@ -96,7 +93,116 @@ services:
       - net.ipv4.conf.all.src_valid_mark=1
     restart: unless-stopped
 
+  # Home Assistant for home automations
+  homeassistant:
+    image: lscr.io/linuxserver/homeassistant:latest
+    container_name: homeassistant
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Asia/Jerusalem
+    volumes:
+      - ${PATH}/home-assistant:/config
+    ports:
+      - 8123:8123 #optional
+    restart: unless-stopped
+    networks:
+      ${NET}:
+
+  # Nextcloud - self hosted cloud service
+  nextcloud_db:
+    image: mariadb
+    container_name: nextcloud_mariadb
+    restart: always
+    volumes:
+      - db:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=${PASS}
+      - MYSQL_PASSWORD=${PASS}
+      - MYSQL_DATABASE=nextcloud
+      - MYSQL_USER=nextcloud
+    command: --transaction-isolation=READ-COMMITTED --binlog-format=ROW --skip-innodb-read-only-compressed
+    networks:
+      ${NET}:
+
+  nextcloud:
+    image: nextcloud
+    container_name: nextcloud
+    restart: always
+    depends_on:
+      - nextcloud_db
+    ports:
+      - 8080:80
+    links:
+      - db
+    volumes:
+      - nextcloud:/var/www/html
+    environment:
+      - MYSQL_PASSWORD=${PASS}
+      - MYSQL_DATABASE=nextcloud
+      - MYSQL_USER=${USER}
+      - MYSQL_HOST=db
+    networks:
+      ${NET}:
+
+  # Guacamole - Remote Session manager
+    # networks:
+    #   ${NET}:
+    #     ipv4_address: 192.168.10.8
+
+  # Vaultwarden - Selfhosted password manager
+  vaultwarden:
+    image: vaultwarden/server:raspberry
+    container_name: vaultwarden
+    networks:
+      ${NET}:
+    expose:
+      - "80"
+      - "3012"
+    volumes:
+      - ${PATH}/Data/Vaultwarden:/data
+    restart: unless-stopped
+    environment:
+      WEBSOCKET_ENABLED: ${WEBSOCKET_ENABLED}
+      SIGNUPS_ALLOWED: ${SIGNUPS_ALLOWED}
+      TZ: ${TZ}
+    build: 
+      context: vaultwarden
+      args: 
+        DB: postgresql
+
+  # Portainer - Docker deployement GUI
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./portainer-data:/data
+    ports:
+      - 9000:9000
+    networks:
+      ${NET}:
+
+  # Elastic Stack and Elatic Security
+    # networks:
+    #   ${NET}:
+    #     ipv4_address: 192.168.10.11-13
+
+volumes:
+  nextcloud:
+  db:
 
 networks:
-  ${NET}:   # externally created network
-    external: true
+  ${NET}:
+    driver: ipvlan
+    driver_opts:
+      parent: eth0
+    ipam:
+      config:
+        - subnet: 10.10.10.0/24
+          gateway: 10.10.10.254
+          ip_range: 10.10.10.0/24 # IP from this pool are assigned automatically
