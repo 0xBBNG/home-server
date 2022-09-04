@@ -38,9 +38,9 @@ services:
       - 67/udp
       - 80/tcp
     volumes:
-      - './etc-pihole/:/etc/pihole/'
-      - './etc-dnsmasq.d/:/etc/dnsmasq.d/'
-      - './backups/:/backups/'
+      - '${DOCKER_PATH}/pihole/etc-pihole/:/etc/pihole/'
+      - '${DOCKER_PATH}/pihole/etc-dnsmasq.d/:/etc/dnsmasq.d/'
+      - '${DOCKER_PATH}/pihole/backups/:/backups/'
     environment:
       WEBPASSWORD: ${PASS}
       TZ: ${TZ}
@@ -63,32 +63,81 @@ services:
       - INIT_ASSETS=1
     restart: unless-stopped
 
-  # Wireguard VPN server
-  # https://hub.docker.com/r/linuxserver/wireguard
-  wireguard:
-    image: ghcr.io/linuxserver/wireguard
-    container_name: wireguard
+  # DuckDNS Dynamic DNS server
+  duckdns:
+    image: lscr.io/linuxserver/duckdns:latest
+    container_name: duckdns
     networks:
       - ${NET}
+    environment:
+      - PUID=${UID} #optional
+      - PGID=${GID} #optional
+      - TZ=${TZ}
+      - SUBDOMAINS=${DOMAIN}
+      - TOKEN=${TOKEN}
+      - LOG_FILE=true #optional
+    volumes:
+      - ${DOCKER_PATH}/duckdns_config:/config
+    restart: unless-stopped
+
+  # All-in-one: WireGuard + Web UI
+  # https://github.com/WeeJeWel/wg-easy
+  wg-easy:
+    environment:
+      - WG_HOST=${DOMAIN}
+      - PASSWORD=${PASS}
+      - WG_PORT=51820
+      # - WG_DEFAULT_ADDRESS=10.8.0.x
+      - WG_DEFAULT_DNS=1.1.1.1, 8.8.8.8
+      # - WG_MTU=1420
+      # - WG_ALLOWED_IPS=192.168.15.0/24, 10.0.1.0/24
+    image: weejewel/wg-easy
+    container_name: wg-easy
+    depends_on:
+      - duckdns
+    networks:
+      - ${NET}
+    volumes:
+      - ${DOCKER_PATH}/wg-easy:/etc/wireguard
+    ports:
+      - "51820:51820/udp"
+      - "51821:51821/tcp"
+    restart: unless-stopped
     cap_add:
       - NET_ADMIN
       - SYS_MODULE
-    environment:
-      - PUID=${UID}
-      - PGID=${GID}
-      - TZ=${TZ} 
-      - SERVERURL=${WG_HOST}
-      - SERVERPORT=51820
-      - PEERS=${WG_PEERS}
-      - PEERDNS=auto
-    volumes:
-      - ${DOCKER_PATH}/wgserver/config:/config
-      - /lib/modules:/lib/modules
-    ports:
-      - 51820:51820/udp
     sysctls:
+      - net.ipv4.ip_forward=1
       - net.ipv4.conf.all.src_valid_mark=1
-    restart: unless-stopped
+
+  # Wireguard VPN server
+  # https://hub.docker.com/r/linuxserver/wireguard
+  # wireguard:
+  #   image: ghcr.io/linuxserver/wireguard
+  #   container_name: wireguard
+  #   depends_on:
+  #     - duckdns
+  #   networks:
+  #     - ${NET}
+  #   cap_add:
+  #     - NET_ADMIN
+  #     - SYS_MODULE
+  #   environment:
+  #     - PUID=${UID}
+  #     - PGID=${GID}
+  #     - TZ=${TZ} 
+  #     - SERVERURL=${WG_HOST}
+  #     - SERVERPORT=51820
+  #     - PEERS=${WG_PEERS}
+  #     - PEERDNS=auto
+  #   volumes:
+  #     - ${DOCKER_PATH}/wgserver/config:/config
+  #     - /lib/modules:/lib/modules
+  #   ports:
+  #     - 51820:51820/udp
+  #   sysctls:
+  #     - net.ipv4.conf.all.src_valid_mark=1
+  #   restart: unless-stopped
 
   # Home Assistant for home automations
   homeassistant:
@@ -115,7 +164,7 @@ services:
     networks:
       - ${NET}
     volumes:
-      - db:/var/lib/mysql
+      - ${DOCKER_PATH}/nextcloud_db:/var/lib/mysql
     environment:
       - MYSQL_ROOT_PASSWORD=${PASS}
       - MYSQL_PASSWORD=${PASS}
@@ -126,7 +175,7 @@ services:
   nextcloud:
     image: nextcloud
     container_name: nextcloud
-    restart: always
+    restart: unless-stopped
     depends_on:
       - nextcloud_db
     networks:
@@ -136,7 +185,7 @@ services:
     links:
       - nextcloud_db
     volumes:
-      - nextcloud:/var/www/html
+      - ${DOCKER_PATH}/nextcloud:/var/www/html
     environment:
       - MYSQL_PASSWORD=${PASS}
       - MYSQL_DATABASE=nextcloud
@@ -158,7 +207,7 @@ services:
       - "80"
       - "3012"
     volumes:
-      - ${DOCKER_PATH}/Data/Vaultwarden:/data
+      - ${DOCKER_PATH}/vaultwarden/data:/data
     restart: unless-stopped
     environment:
       WEBSOCKET_ENABLED: ${WEBSOCKET_ENABLED}
@@ -179,19 +228,16 @@ services:
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./portainer-data:/data
+      - ${DOCKER_PATH}/portainer:/data
 
   # Elastic Stack and Elatic Security
     # networks:
     #   ${NET}:
     #     ipv4_address: 192.168.10.11-13
 
-volumes:
-  nextcloud:
-  db:
-
 networks:
   asgard: 
+    driver: ipvlan
     driver_opts:
       parent: eth0
     ipam:

@@ -26,7 +26,9 @@ Start the containers with
 docker compose up -d
 ```
 
-:warning: You have to install docker and docker-compose first.
+## Requirements
+- Docker & Docker compose
+- [DuckDNS domain and API Token](https://www.duckdns.org/)
 
 ## Tasks
 
