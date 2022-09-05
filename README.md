@@ -11,10 +11,8 @@ This repository helps to host your own home server.
 - [homeassistant](https://hub.docker.com/r/homeassistant/home-assistant)
 - [nextcloud](https://hub.docker.com/_/nextcloud)
 - [postgres](https://hub.docker.com/_/postgres)
-- [guacamole](https://hub.docker.com/r/guacamole/guacamole)
 - [vaultwarden](https://hub.docker.com/r/vaultwarden/server)
 - [portainer](https://hub.docker.com/r/portainer/portainer-ce)
-- [elastic stack](https://hub.docker.com/_/elasticsearch)
 
 ## Usage
 
@@ -54,10 +52,10 @@ ip route add 192.168.1.192/27 dev asgard #example
 **Success!**
 
 ## Requirements
-- Docker & Docker compose
+- [Docker & Docker compose](https://github.com/docker/docker-install)
 - [DuckDNS domain and API Token](https://www.duckdns.org/)
 
 ## Tasks
 
 * guacamole
-* elastic stack
+* elasticstack
