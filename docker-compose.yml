@@ -7,7 +7,7 @@ services:
     container_name: ouroboros
     hostname: ouroboros
     networks:
-      - ${NET}
+      - macvlan
     image: pyouroboros/ouroboros
     environment:
       - CLEANUP=true
@@ -28,10 +28,10 @@ services:
     cap_add:
       - NET_ADMIN
     networks:
-      - ${NET}
+      - macvlan
     dns:
-      - 127.0.0.1
       - 1.1.1.1
+      - 8.8.8.8
     ports:
       - 53/tcp
       - 53/udp
@@ -53,7 +53,7 @@ services:
     image: b4bz/homer:latest
     hostname: homer
     networks:
-      - ${NET}
+      - macvlan
     ports:
       - 8080:8080
     volumes:
@@ -68,7 +68,7 @@ services:
     image: lscr.io/linuxserver/duckdns:latest
     container_name: duckdns
     networks:
-      - ${NET}
+      - macvlan
     environment:
       - PUID=${UID} #optional
       - PGID=${GID} #optional
@@ -96,7 +96,7 @@ services:
     depends_on:
       - duckdns
     networks:
-      - ${NET}
+      - macvlan
     volumes:
       - ${DOCKER_PATH}/wg-easy:/etc/wireguard
     ports:
@@ -115,7 +115,7 @@ services:
     image: lscr.io/linuxserver/homeassistant:latest
     container_name: homeassistant
     networks:
-      - ${NET}
+      - macvlan
     environment:
       - PUID=1000
       - PGID=1000
@@ -133,7 +133,7 @@ services:
     container_name: nextcloud_mariadb
     restart: always
     networks:
-      - ${NET}
+      - macvlan
     volumes:
       - ${DOCKER_PATH}/nextcloud_db:/var/lib/mysql
     environment:
@@ -150,7 +150,7 @@ services:
     depends_on:
       - nextcloud_db
     networks:
-      - ${NET}
+      - macvlan
     ports:
       - 8888:80
     links:
@@ -168,7 +168,7 @@ services:
     image: vaultwarden/server:latest
     container_name: vaultwarden
     networks:
-      - ${NET}
+      - macvlan
     expose:
       - "80"
       - "3012"
@@ -187,7 +187,7 @@ services:
     ports:
       - 9000:9000
     networks:
-      - ${NET}
+      - macvlan
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
@@ -200,13 +200,15 @@ services:
   # Elastic Stack and Elatic Security
 
 networks:
-  network:
+  macvlan:
     name: ${NET}
     driver: macvlan
     driver_opts:
-      parent: eth0
+      parent: ${PARENT_INTERFACE}
     ipam:
       config:
         - subnet: ${SUBNET}
           gateway: ${GATEWAY}
           ip_range: ${IP_RANGE}
+          aux_addresses:
+            host: ${AUX}

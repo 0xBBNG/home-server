@@ -21,10 +21,37 @@ This repository helps to host your own home server.
 Edit your settings in the `.env` file.
 
 Start the containers with
-
 ```shell
 docker compose up -d
 ```
+
+### Enable host to container networking
+
+* Create new interface (Interface name is *dockerrouteif*, and *eth0* is the host interface): 
+```shell
+ip link add {DOCKER_NETWORK} link {PARENT_INTERFACE} type macvlan mode bridge
+ip link add asgard link eth0 type macvlan mode bridge #example
+```
+
+* Assign IP address to that interface:
+```shell
+ip addr add {AUX}/32 dev {DOCKER_NETWORK}
+ip addr add 192.168.1.200/32 dev asgard #example
+```
+
+* Bring up that interface:
+```shell
+ip link set {DOCKER_NETWORK} up
+ip link set asgard up  #example
+
+```
+* And finally define a range which should be routed trough that iterface:
+```shell
+ip route add {DOCKER_IP_RANGE} dev {DOCKER_NETWORK}
+ip route add 192.168.1.192/27 dev asgard #example
+```
+
+**Success!**
 
 ## Requirements
 - Docker & Docker compose
